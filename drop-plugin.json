@@ -1,0 +1,21 @@
+{
+  "id": "drop-emulation",
+  "name": "Emulation & ROM Linking",
+  "version": "0.1.0",
+  "description": "Links ROM titles to emulators and rewrites launch arguments",
+  "author": "Heretek Games",
+  "apiVersion": 2,
+  "trust": "trusted",
+  "storageVersion": 1,
+  "capabilities": [
+    "ui:slot",
+    "game:launch-hook",
+    "system:command",
+    "game:fs",
+    "client:storage"
+  ],
+  "targets": [
+    "client"
+  ],
+  "entry": "dist/src/index.js"
+}
