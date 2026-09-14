@@ -14,7 +14,6 @@ import {
   DEFAULT_EMULATORS,
   buildLaunchSpec,
   discoverEmulators,
-  expandRomArgs,
 } from "./emulator.js";
 
 export * from "./emulator.js";
