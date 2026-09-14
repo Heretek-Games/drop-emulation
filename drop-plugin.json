@@ -17,5 +17,27 @@
   "targets": [
     "client"
   ],
-  "entry": "dist/src/index.js"
+  "entry": "dist/src/index.js",
+  "client": {
+    "entry": "dist/src/index.js",
+    "capabilities": [
+      "ui:slot",
+      "game:launch-hook",
+      "system:command",
+      "game:fs",
+      "client:storage"
+    ],
+    "commands": [
+      "retroarch",
+      "dolphin-emu",
+      "duckstation-qt",
+      "pcsx2-qt",
+      "melonds",
+      "mgba-qt",
+      "snes9x-gtk",
+      "mupen64plus",
+      "flycast",
+      "ppsspp-qt"
+    ]
+  }
 }
