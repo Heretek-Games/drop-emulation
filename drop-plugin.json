@@ -39,5 +39,29 @@
       "flycast",
       "ppsspp-qt"
     ]
+  },
+  "checksum": "9ce7c6ec4c4836739c276f928c96e1b01b23fc1021480e01ca9e9c8a6c663797",
+  "files": {
+    ".github/dependabot.yml": "fe156952d1952825377de8e48c90563a3ac19bb95a6e0ced8a2f498a0f20fdf6",
+    ".github/workflows/ci.yml": "60a33a67813097e4744a54b21d8af35e6c0254e56001123a69f34ccf65d1fa8b",
+    ".gitignore": "e8bc935ce727f1809c792f4c5d26c5fc75ba2b7df7fc9390c56c8892f6a6007f",
+    "AGENTS.md": "5c40761f860317e9ac81fab0d7da939d579e48fec49b301f5aeac2de2b6c0ccf",
+    "CLAUDE.md": "3b2c8a6a80fe79fa9ee0680b86d2e84ce0b9255d3dc43eccd4e2fce59064c7da",
+    "dist/src/emulator.d.ts": "da93a753d5f334af5f3bcd24fe341dafeb7b43ac6ca9457436f40a21246341b7",
+    "dist/src/emulator.js": "3d5de014c2b2e9783cb83adb0682708044cc01f1a9961da8c4f6749d63dcb7d1",
+    "dist/src/index.d.ts": "8a71db2ff47abffdd62a70766f138d6a2899eeea0cb051e020fc5c0b27da17ff",
+    "dist/src/index.js": "9ce7c6ec4c4836739c276f928c96e1b01b23fc1021480e01ca9e9c8a6c663797",
+    "dist/test/emulation.test.d.ts": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "dist/test/emulation.test.js": "f7d8596199e7367d86f4467e283850b4f0a53a7ddb1aa71b6f784f4c1e08460f",
+    "eslint.config.mjs": "4cdf67d5a07b1a089d8f39e842a7de7532eb519752d60fe5ac706f42fb7bdc6f",
+    "GEMINI.md": "3b2c8a6a80fe79fa9ee0680b86d2e84ce0b9255d3dc43eccd4e2fce59064c7da",
+    "package-lock.json": "99c10be18f14b401afe4761eebee82a32e568a3b03108d7e21efdadabea25550",
+    "package.json": "d1da6db7d790aadc5d088803ddf71585d2d0432a26225e9f97ec86bc8fab6e0a",
+    "README.md": "398247026f1570e4165c67020d6d9e10c454fc59dc803235c27e756dc5c43b82",
+    "SECURITY.md": "1ed84c5e2293a1bda1e0d1650df39f5c03dba9a18ee6d8acff78cc10a6897d2d",
+    "src/emulator.ts": "4b3c109bf0b0a1c6376745217febc259483acc8a58b3a767c3267165f9b40d5a",
+    "src/index.ts": "977769733600a461bdc3413b10b4f7b9c1ac760835c67818e1fa6427e27aca0b",
+    "test/emulation.test.ts": "b6e5be7b26bdfe702136ee092b6c09f08257997700677bc03eefe1f3025bbbd8",
+    "tsconfig.json": "e67d6d62d5af3c653c4d1af30dea94d529c721708e54bd8609d748be627e79e5"
   }
 }
