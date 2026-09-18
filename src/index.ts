@@ -2,6 +2,9 @@ import type {
   ClientPlugin,
   ClientPluginContext,
   LaunchContext,
+  LaunchOverrides,
+  RunnerPlatform,
+  RunnerProvider,
   ScopedGameFs,
   ClientPluginSystem,
   ClientPluginStorage,
@@ -10,7 +13,6 @@ import type {
 import {
   type EmulatorBinding,
   type EmulatorDefinition,
-  type RomBindingMetadata,
   DEFAULT_EMULATORS,
   buildLaunchSpec,
   discoverEmulators,
@@ -95,14 +97,14 @@ export interface ResolveLaunchDeps {
 
 /**
  * Validates the game's ROM binding, discovers an installed/allowlisted
- * emulator, and publishes the rewritten launch command on
- * `context.metadata.launchCommand` (plus `context.metadata.emulation`).
- * Throws to abort the launch pipeline when the binding is broken.
+ * emulator, and returns the `LaunchOverrides` the host applies to the launch
+ * command. Returns `null` when the game has no binding. Throws to abort the
+ * launch pipeline when the binding is broken.
  */
-export async function resolveLaunch(
+export async function resolveLaunchOverrides(
   context: LaunchContext,
   deps: ResolveLaunchDeps,
-): Promise<RomBindingMetadata | null> {
+): Promise<LaunchOverrides | null> {
   const binding = await deps.storage.get<EmulatorBinding>(
     bindingKey(context.gameId),
   );
@@ -132,20 +134,33 @@ export async function resolveLaunch(
   }
 
   const spec = buildLaunchSpec(definition, binding);
-  const metadata: RomBindingMetadata = {
-    ...spec,
-    romPath: binding.romPath,
-    coreId: binding.coreId,
-  };
-  context.metadata = {
-    ...(context.metadata ?? {}),
-    launchCommand: spec.commandLine,
-    emulation: metadata,
-  };
   deps.logger.debug(
     `ROM binding ready for ${context.gameTitle}: ${spec.commandLine}`,
   );
-  return metadata;
+  return { executable: spec.command, arguments: spec.args };
+}
+
+/**
+ * Compatibility runner that rewrites a game's launch to its bound emulator.
+ * Registered through the host `game:runner` SPI, so no pre-launch hook or core
+ * launch-command mutation is involved.
+ */
+export class EmulationRunnerProvider implements RunnerProvider {
+  id = "drop-emulation";
+  name = "Emulation & ROM Linking";
+  supportedPlatforms: RunnerPlatform[] = ["windows", "linux", "macos", "rom"];
+
+  constructor(private readonly deps: ResolveLaunchDeps) {}
+
+  async detect(): Promise<{ available: boolean; version?: string }> {
+    // Availability is per-game (the ROM binding); the host calls resolveLaunch
+    // for every game and we contribute overrides only when one exists.
+    return { available: true };
+  }
+
+  async resolveLaunch(context: LaunchContext): Promise<LaunchOverrides> {
+    return (await resolveLaunchOverrides(context, this.deps)) ?? {};
+  }
 }
 
 export default class EmulationPlugin implements ClientPlugin {
@@ -156,7 +171,7 @@ export default class EmulationPlugin implements ClientPlugin {
     apiVersion: 2,
     capabilities: [
       "ui:slot" as const,
-      "game:launch-hook" as const,
+      "game:runner" as const,
       "system:command" as const,
       "game:fs" as const,
       "client:storage" as const,
@@ -164,17 +179,14 @@ export default class EmulationPlugin implements ClientPlugin {
   };
 
   async init(ctx: ClientPluginContext): Promise<void> {
-    ctx.registerLaunchHook({
-      stage: "pre-launch:prepare",
-      execute: async (context: LaunchContext) => {
-        await resolveLaunch(context, {
-          gameFs: ctx.gameFs,
-          system: ctx.system,
-          storage: ctx.storage,
-          logger: ctx.logger,
-        });
-      },
-    });
+    ctx.registerRunnerProvider?.(
+      new EmulationRunnerProvider({
+        gameFs: ctx.gameFs,
+        system: ctx.system,
+        storage: ctx.storage,
+        logger: ctx.logger,
+      }),
+    );
 
     ctx.registerSlot("game-detail:panels", createEmulatorPanel(ctx), {
       order: 40,

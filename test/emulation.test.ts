@@ -9,13 +9,13 @@ import Plugin, {
   createEmulatorPanel,
   discoverEmulators,
   expandRomArgs,
-  resolveLaunch,
+  resolveLaunchOverrides,
   tokenizeCommand,
 } from "../src/index.js";
 
 const CAPABILITIES = [
   "ui:slot",
-  "game:launch-hook",
+  "game:runner",
   "system:command",
   "game:fs",
   "client:storage",
@@ -42,13 +42,14 @@ function deps(ctx: MockClientPluginContext): ResolveLaunchDeps {
   };
 }
 
-test("drop-emulation registers a launch hook and a game-detail panel", async () => {
+test("drop-emulation registers a runner provider and a game-detail panel", async () => {
   const ctx = new MockClientPluginContext("drop-emulation", [
     ...CAPABILITIES,
   ]);
   await new Plugin().init(ctx);
-  assert.equal(ctx.launchHooks.length, 1);
-  assert.equal(ctx.launchHooks[0].stage, "pre-launch:prepare");
+  assert.equal(ctx.launchHooks.length, 0);
+  assert.equal(ctx.runnerProviders.length, 1);
+  assert.equal(ctx.runnerProviders[0].id, "drop-emulation");
   const panels = ctx.registeredSlots.get("game-detail:panels");
   assert.equal(panels?.length, 1);
   assert.equal((panels?.[0].component as { name?: string }).name, "EmulatorPanel");
@@ -127,47 +128,62 @@ test("discoverEmulators keeps only allowlisted, working binaries", async () => {
   assert.deepEqual(available.map((entry) => entry.id), ["retroarch"]);
 });
 
-test("resolveLaunch validates the ROM and rewrites the launch command", async () => {
+test("resolveLaunchOverrides validates the ROM and returns launch overrides", async () => {
   const ctx = new MockClientPluginContext("drop-emulation", [
     ...CAPABILITIES,
   ]);
   await ctx.storage.set("binding:g1", BINDING);
   await ctx.gameFs.writeFile("g1", BINDING.romPath, "rom-bytes");
 
-  const metadata = await resolveLaunch(structuredClone(LAUNCH), deps(ctx));
-  assert.ok(metadata);
-  assert.equal(metadata.command, "retroarch");
-  assert.deepEqual(metadata.args, ["-L", "snes9x", "roms/chrono-trigger.sfc"]);
-
-  const context = structuredClone(LAUNCH);
-  await resolveLaunch(context, deps(ctx));
-  assert.equal(
-    context.metadata?.launchCommand,
-    "retroarch -L snes9x roms/chrono-trigger.sfc",
+  const overrides = await resolveLaunchOverrides(
+    structuredClone(LAUNCH),
+    deps(ctx),
   );
-  assert.deepEqual(
-    (context.metadata?.emulation as { romPath?: string }).romPath,
+  assert.ok(overrides);
+  assert.equal(overrides.executable, "retroarch");
+  assert.deepEqual(overrides.arguments, [
+    "-L",
+    "snes9x",
     "roms/chrono-trigger.sfc",
-  );
+  ]);
   assert.deepEqual(ctx.systemCommand.calls[0].args, ["--version"]);
 });
 
-test("resolveLaunch is a no-op without a binding and aborts on a missing ROM", async () => {
+test("EmulationRunnerProvider contributes overrides through the runner SPI", async () => {
+  const ctx = new MockClientPluginContext("drop-emulation", [
+    ...CAPABILITIES,
+  ]);
+  await new Plugin().init(ctx);
+  await ctx.storage.set("binding:g1", BINDING);
+  await ctx.gameFs.writeFile("g1", BINDING.romPath, "rom-bytes");
+
+  const provider = ctx.runnerProviders[0];
+  assert.deepEqual(await provider.detect(), { available: true });
+  const overrides = await provider.resolveLaunch(structuredClone(LAUNCH));
+  assert.equal(overrides.executable, "retroarch");
+  assert.deepEqual(overrides.arguments, [
+    "-L",
+    "snes9x",
+    "roms/chrono-trigger.sfc",
+  ]);
+});
+
+test("resolveLaunchOverrides is a no-op without a binding and aborts on a missing ROM", async () => {
   const ctx = new MockClientPluginContext("drop-emulation", [
     ...CAPABILITIES,
   ]);
   const context = structuredClone(LAUNCH);
-  assert.equal(await resolveLaunch(context, deps(ctx)), null);
+  assert.equal(await resolveLaunchOverrides(context, deps(ctx)), null);
   assert.equal(context.metadata, undefined);
 
   await ctx.storage.set("binding:g1", BINDING);
   await assert.rejects(
-    () => resolveLaunch(structuredClone(LAUNCH), deps(ctx)),
+    () => resolveLaunchOverrides(structuredClone(LAUNCH), deps(ctx)),
     /was not found in the game directory/,
   );
 });
 
-test("resolveLaunch rejects emulators that are not installed or allowlisted", async () => {
+test("resolveLaunchOverrides rejects emulators that are not installed or allowlisted", async () => {
   const ctx = new MockClientPluginContext("drop-emulation", [
     ...CAPABILITIES,
   ]);
@@ -179,7 +195,7 @@ test("resolveLaunch rejects emulators that are not installed or allowlisted", as
     stderr: "command not allowlisted",
   });
   await assert.rejects(
-    () => resolveLaunch(structuredClone(LAUNCH), deps(ctx)),
+    () => resolveLaunchOverrides(structuredClone(LAUNCH), deps(ctx)),
     /not installed or allowlisted/,
   );
 });
